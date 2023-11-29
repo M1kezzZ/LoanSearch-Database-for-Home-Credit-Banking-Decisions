@@ -1,0 +1,9 @@
+{
+  "rds_host": "database-1.crxg4ifeunfj.us-east-1.rds.amazonaws.com",
+  "rds_port": "3306",
+  "rds_user": "guest1",
+  "rds_password": "JR2IlNY4DCtw4XmX",
+  "rds_db": "HOME_CREDIT",
+  "server_host": "localhost",
+  "server_port": "8080"
+}
