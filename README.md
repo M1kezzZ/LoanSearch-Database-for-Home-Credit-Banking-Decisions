@@ -83,3 +83,9 @@ SHOW INDEXES FROM applicants;
 SHOW INDEXES FROM installments_payments;
 SHOW INDEXES FROM previous_application;
 ```
+
+# Server
+Add all routes.\
+Add cache for route 5, it will update when logging homepage.
+
+Server runs well.
