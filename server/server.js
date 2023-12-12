@@ -28,65 +28,10 @@ app.use(
 );
 
 // Cache setup for Route 5
-let applicationFrequencyCache = {
-  data: null,
-  lastUpdated: 0,
-  expiryInSeconds: 3600 // 1 hour
-};
 
-// Function to update cache for Route 5
-async function updateApplicationFrequencyCache() {
-  // Replace with actual SQL query for Route 5
-  const query = `
-      WITH Application_Intervals AS (
-          SELECT 
-              SK_ID_CURR, 
-              DAYS_DECISION, 
-              LAG(DAYS_DECISION) OVER (PARTITION BY SK_ID_CURR ORDER BY DAYS_DECISION ASC) AS Previous_days_decision
-          FROM previous_application
-      ),
-      Categorized_Intervals AS (
-          SELECT 
-              SK_ID_CURR, 
-              CASE
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 50 THEN 'Up to 50 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 100 THEN '51 to 100 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 150 THEN '101 to 150 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 200 THEN '151 to 200 days'
-                  ELSE 'More than 200 days'
-              END AS days_apart_category
-          FROM Application_Intervals
-          WHERE Previous_DAYS_DECISION IS NOT NULL
-      )
-      SELECT 
-          days_apart_category,
-          COUNT(*) AS application_count
-      FROM Categorized_Intervals
-      GROUP BY days_apart_category;
-  `;
-  connection.query(query, (err, results) => {
-      if (err) {
-          console.error('Error fetching data for application frequency:', err);
-          return;
-      }
-      applicationFrequencyCache = {
-          data: results,
-          lastUpdated: Date.now(),
-          expiryInSeconds: applicationFrequencyCache.expiryInSeconds
-      };
-  });
-}
 
 // Route handler for the homepage
-app.get('/Homepage', async (req, res) => {
-  // Check if the cache for Route 5 needs updating
-  if ((Date.now() - applicationFrequencyCache.lastUpdated) / 1000 > applicationFrequencyCache.expiryInSeconds) {
-      await updateApplicationFrequencyCache();
-  }
-
-  // Respond with a simple HTML page or JSON, depending on your application's requirement
-  res.send('<h1>Welcome to the Homepage</h1><p>Application Frequency Data is being updated in the background.</p>');
-});
+app.get("/homepage", routes.homepage);
 
 
 

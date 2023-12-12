@@ -156,13 +156,13 @@ connection.connect((err) => err && console.log(err));
 //   const album_id = req.params.album_id;
 //   connection.query(
 //     `
-//   SELECT 
-//     song_id, 
-//     title, 
-//     number, 
-//     duration, 
+//   SELECT
+//     song_id,
+//     title,
+//     number,
+//     duration,
 //     plays
-//   FROM Songs 
+//   FROM Songs
 //   WHERE album_id = ?
 //   ORDER BY number ASC
 // `,
@@ -190,11 +190,11 @@ connection.connect((err) => err && console.log(err));
 //   //const pagesize = req.query.page_size
 //   const pageSize = req.query.page_size ? parseInt(req.query.page_size) : 10;
 //   const q1 = `
-//   SELECT 
-//     s.song_id, 
-//     s.title, 
-//     s.album_id, 
-//     a.title AS album, 
+//   SELECT
+//     s.song_id,
+//     s.title,
+//     s.album_id,
+//     a.title AS album,
 //     s.plays
 //   FROM Songs s
 //   JOIN Albums a ON s.album_id = a.album_id
@@ -235,9 +235,9 @@ connection.connect((err) => err && console.log(err));
 //   const page = req.query.page;
 //   const pageSize = req.query.page_size ? parseInt(req.query.page_size) : 10;
 //   const q1 = `
-//       SELECT 
-//       a.album_id, 
-//       a.title, 
+//       SELECT
+//       a.album_id,
+//       a.title,
 //       SUM(s.plays) AS plays
 //     FROM Albums a
 //     LEFT JOIN Songs s ON a.album_id = s.album_id
@@ -284,15 +284,15 @@ connection.connect((err) => err && console.log(err));
 //   const explicit = req.query.explicit === "true";
 
 //   let query = `
-//     SELECT 
-//       song_id, album_id, title, duration, plays, danceability, 
+//     SELECT
+//       song_id, album_id, title, duration, plays, danceability,
 //       energy, valence, number, tempo, key_mode, explicit
-//     FROM Songs 
-//     WHERE 
-//       duration BETWEEN ? AND ? 
-//       AND plays BETWEEN ? AND ? 
-//       AND danceability BETWEEN ? AND ? 
-//       AND energy BETWEEN ? AND ? 
+//     FROM Songs
+//     WHERE
+//       duration BETWEEN ? AND ?
+//       AND plays BETWEEN ? AND ?
+//       AND danceability BETWEEN ? AND ?
+//       AND energy BETWEEN ? AND ?
 //       AND valence BETWEEN ? AND ?
 //       AND title LIKE ?
 //   `;
@@ -364,14 +364,14 @@ const applicant = async function (req, res) {
   `;
 
   connection.query(query, [req.params.applicant_id], (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json({});
-      } else if (data.length === 0) {
-          res.status(404).send("The ID does not exist");
-      } else {
-          res.json(data[0]);
-      }
+    if (err) {
+      console.log(err);
+      res.json({});
+    } else if (data.length === 0) {
+      res.status(404).send("The ID does not exist");
+    } else {
+      res.json(data[0]);
+    }
   });
 };
 
@@ -388,14 +388,14 @@ const late_payment = async function (req, res) {
   `;
 
   connection.query(query, [req.params.applicant_id], (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json({});
-      } else if (data.length === 0) {
-          res.status(404).send("Applicant ID not found");
-      } else {
-          res.json(data[0]);
-      }
+    if (err) {
+      console.log(err);
+      res.json({});
+    } else if (data.length === 0) {
+      res.status(404).send("Applicant ID not found");
+    } else {
+      res.json(data[0]);
+    }
   });
 };
 
@@ -433,16 +433,24 @@ const previous_applications = async function (req, res) {
       ORDER BY tp.processed_days_ago DESC;
   `;
 
-  connection.query(query, [req.params.applicant_id, req.params.applicant_id], (err, data) => {
+  connection.query(
+    query,
+    [req.params.applicant_id, req.params.applicant_id],
+    (err, data) => {
       if (err) {
-          console.log(err);
-          res.json({});
+        console.log(err);
+        res.json({});
       } else if (data.length === 0) {
-          res.status(404).send("No previous loan applications found for the provided applicant ID");
+        res
+          .status(404)
+          .send(
+            "No previous loan applications found for the provided applicant ID"
+          );
       } else {
-          res.json(data);
+        res.json(data);
       }
-  });
+    }
+  );
 };
 
 // route 4
@@ -475,58 +483,114 @@ const assess_loyalty = async function (req, res) {
       JOIN first_loan fl;
   `;
 
-  connection.query(query, [req.params.applicant_id, req.params.applicant_id], (err, data) => {
+  connection.query(
+    query,
+    [req.params.applicant_id, req.params.applicant_id],
+    (err, data) => {
       if (err) {
-          console.log(err);
-          res.json({});
+        console.log(err);
+        res.json({});
       } else if (data.length === 0) {
-          res.status(404).send("Applicant ID not found or no loan history available");
+        res
+          .status(404)
+          .send("Applicant ID not found or no loan history available");
       } else {
-          res.json(data[0]);
+        res.json(data[0]);
       }
-  });
+    }
+  );
 };
+
+let applicationFrequencyCache = {
+    data: null,
+    lastUpdated: 0,
+    expiryInSeconds: 3600 // 1 hour
+  };
+  
+  // Function to update cache for Route 5
+  async function updateApplicationFrequencyCache() {
+    // Replace with actual SQL query for Route 5
+    const query = `
+        WITH Application_Intervals AS (
+            SELECT 
+                SK_ID_CURR, 
+                DAYS_DECISION, 
+                LAG(DAYS_DECISION) OVER (PARTITION BY SK_ID_CURR ORDER BY DAYS_DECISION ASC) AS Previous_days_decision
+            FROM previous_application
+        ),
+        Categorized_Intervals AS (
+            SELECT 
+                SK_ID_CURR, 
+                CASE
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 50 THEN 'Up to 50 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 100 THEN '51 to 100 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 150 THEN '101 to 150 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 200 THEN '151 to 200 days'
+                    ELSE 'More than 200 days'
+                END AS days_apart_category
+            FROM Application_Intervals
+            WHERE Previous_DAYS_DECISION IS NOT NULL
+        )
+        SELECT 
+            days_apart_category,
+            COUNT(*) AS application_count
+        FROM Categorized_Intervals
+        GROUP BY days_apart_category;
+    `;
+    connection.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching data for application frequency:', err);
+            return;
+        }
+        applicationFrequencyCache = {
+            data: results,
+            lastUpdated: Date.now(),
+            expiryInSeconds: applicationFrequencyCache.expiryInSeconds
+        };
+    });
+  }
 
 // route 5
 const application_frequency = async function (req, res) {
-  const query = `
-      WITH Application_Intervals AS (
-          SELECT 
-              SK_ID_CURR, 
-              DAYS_DECISION, 
-              LAG(DAYS_DECISION) OVER (PARTITION BY SK_ID_CURR ORDER BY DAYS_DECISION ASC) AS Previous_days_decision
-          FROM previous_application
-      ),
-      Categorized_Intervals AS (
-          SELECT 
-              SK_ID_CURR, 
-              CASE
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 50 THEN 'Up to 50 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 100 THEN '51 to 100 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 150 THEN '101 to 150 days'
-                  WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 200 THEN '151 to 200 days'
-                  ELSE 'More than 200 days'
-              END AS days_apart_category
-          FROM Application_Intervals
-          WHERE Previous_DAYS_DECISION IS NOT NULL
-      )
-      SELECT 
-          days_apart_category,
-          COUNT(*) AS application_count
-      FROM Categorized_Intervals
-      GROUP BY days_apart_category;
-  `;
+  const currentTime = Date.now();
 
-  // Assuming caching logic is handled elsewhere
-  connection.query(query, (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json([]);
-      } else {
-          res.json(data);
-      }
-  });
+  // Check if cached data is available and not expired
+  if (
+    applicationFrequencyCache.data &&
+    currentTime - applicationFrequencyCache.lastUpdated <
+      applicationFrequencyCache.expiryInSeconds * 1000
+  ) {
+    // Returning cached data
+    return res.json(applicationFrequencyCache.data);
+  } else {
+    // Update the cache if data is not available or expired
+    updateApplicationFrequencyCache()
+      .then(() => {
+        // Return the updated data
+        if (applicationFrequencyCache.data) {
+          res.json(applicationFrequencyCache.data);
+        } else {
+          res.status(500).send("Fetching application frequency data");
+        }
+      })
+      .catch((err) => {
+        console.error("Error updating application frequency cache:", err);
+        res.status(500).send("Error fetching application frequency data");
+      });
+  }
 };
+
+
+const homepage = async function (req, res) {
+    // Check if the cache for Route 5 needs updating
+    if ((Date.now() - applicationFrequencyCache.lastUpdated) / 1000 > applicationFrequencyCache.expiryInSeconds) {
+        await updateApplicationFrequencyCache();
+    }
+    
+    // Respond with a simple HTML page or JSON, depending on your application's requirement
+    res.send('<h1>Welcome to the Homepage</h1><p>Application Frequency Data is being updated in the background.</p>');
+    };
+
 
 // route 6
 const advance_search_applications = async function (req, res) {
@@ -556,24 +620,32 @@ const advance_search_applications = async function (req, res) {
   `;
 
   // Adding the TARGET filter if provided
-  const queryParams = [incomeLow, incomeHigh, creditLow, creditHigh, annuityLow, annuityHigh];
+  const queryParams = [
+    incomeLow,
+    incomeHigh,
+    creditLow,
+    creditHigh,
+    annuityLow,
+    annuityHigh,
+  ];
   if (target !== undefined) {
-      query += ' AND TARGET = ?';
-      queryParams.push(target);
+    query += " AND TARGET = ?";
+    queryParams.push(target);
   }
 
-  query += ' ORDER BY SK_ID_CURR ASC;';
+  query += " ORDER BY SK_ID_CURR ASC;";
 
   // Executing the query
   connection.query(query, queryParams, (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json([]);
-      } else {
-          res.json(data);
-      }
+    if (err) {
+      console.log(err);
+      res.json([]);
+    } else {
+      res.json(data);
+    }
   });
 };
+
 
 
 // route 7
@@ -590,14 +662,14 @@ const applicant_more = async function (req, res) {
   `;
 
   connection.query(query, [req.params.applicant_id], (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json([]);
-      } else if (data.length === 0) {
-          res.status(404).send("Applicant ID not found");
-      } else {
-          res.json(data);
-      }
+    if (err) {
+      console.log(err);
+      res.json([]);
+    } else if (data.length === 0) {
+      res.status(404).send("Applicant ID not found");
+    } else {
+      res.json(data);
+    }
   });
 };
 
@@ -620,26 +692,36 @@ const applications_count = async function (req, res) {
   `;
 
   connection.query(query, (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json({});
-      } else {
-          // Ensuring that months with no applications are included with a count of zero
-          const currentDate = new Date();
-          const threeYearsAgo = new Date(currentDate.getFullYear() - 3, currentDate.getMonth(), 1);
-          let result = [];
-          for (let d = threeYearsAgo; d <= currentDate; d.setMonth(d.getMonth() + 1)) {
-              let year = d.getFullYear();
-              let month = d.getMonth() + 1;
-              let found = data.find(row => row.Year === year && row.Month === month);
-              result.push({
-                  Year: year,
-                  Month: month,
-                  total_applications: found ? found.total_applications : 0
-              });
-          }
-          res.json(result);
+    if (err) {
+      console.log(err);
+      res.json({});
+    } else {
+      // Ensuring that months with no applications are included with a count of zero
+      const currentDate = new Date();
+      const threeYearsAgo = new Date(
+        currentDate.getFullYear() - 3,
+        currentDate.getMonth(),
+        1
+      );
+      let result = [];
+      for (
+        let d = threeYearsAgo;
+        d <= currentDate;
+        d.setMonth(d.getMonth() + 1)
+      ) {
+        let year = d.getFullYear();
+        let month = d.getMonth() + 1;
+        let found = data.find(
+          (row) => row.Year === year && row.Month === month
+        );
+        result.push({
+          Year: year,
+          Month: month,
+          total_applications: found ? found.total_applications : 0,
+        });
       }
+      res.json(result);
+    }
   });
 };
 
@@ -671,29 +753,38 @@ const approval_rate = async function (req, res) {
   `;
 
   connection.query(query, (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json({});
-      } else {
-          // Ensuring that months with no applications are included with an approval rate of zero
-          const currentDate = new Date();
-          const threeYearsAgo = new Date(currentDate.getFullYear() - 3, currentDate.getMonth(), 1);
-          let result = [];
-          for (let d = threeYearsAgo; d <= currentDate; d.setMonth(d.getMonth() + 1)) {
-              let year = d.getFullYear();
-              let month = d.getMonth() + 1;
-              let found = data.find(row => row.Year === year && row.Month === month);
-              result.push({
-                  Year: year,
-                  Month: month,
-                  approval_rate: found ? found.approval_rate : 0
-              });
-          }
-          res.json(result);
+    if (err) {
+      console.log(err);
+      res.json({});
+    } else {
+      // Ensuring that months with no applications are included with an approval rate of zero
+      const currentDate = new Date();
+      const threeYearsAgo = new Date(
+        currentDate.getFullYear() - 3,
+        currentDate.getMonth(),
+        1
+      );
+      let result = [];
+      for (
+        let d = threeYearsAgo;
+        d <= currentDate;
+        d.setMonth(d.getMonth() + 1)
+      ) {
+        let year = d.getFullYear();
+        let month = d.getMonth() + 1;
+        let found = data.find(
+          (row) => row.Year === year && row.Month === month
+        );
+        result.push({
+          Year: year,
+          Month: month,
+          approval_rate: found ? found.approval_rate : 0,
+        });
       }
+      res.json(result);
+    }
   });
 };
-
 
 // route 10
 const applicant_trends = async function (req, res) {
@@ -721,17 +812,16 @@ const applicant_trends = async function (req, res) {
   `;
 
   connection.query(query, [req.params.applicant_id], (err, data) => {
-      if (err) {
-          console.log(err);
-          res.json([]);
-      } else if (data.length === 0) {
-          res.status(404).send("No data available for the specified applicant ID");
-      } else {
-          res.json(data);
-      }
+    if (err) {
+      console.log(err);
+      res.json([]);
+    } else if (data.length === 0) {
+      res.status(404).send("No data available for the specified applicant ID");
+    } else {
+      res.json(data);
+    }
   });
 };
-
 
 module.exports = {
   applicant,
@@ -744,5 +834,5 @@ module.exports = {
   applications_count,
   approval_rate,
   applicant_trends,
-  
+  homepage,
 };
