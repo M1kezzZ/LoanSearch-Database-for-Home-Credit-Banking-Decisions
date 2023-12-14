@@ -601,7 +601,7 @@ const advance_search_applications = async function (req, res) {
   const creditHigh = req.query.AMT_CREDIT_high ?? 10000000;
   const annuityLow = req.query.AMT_ANNUITY_low ?? 0;
   const annuityHigh = req.query.AMT_ANNUITY_high ?? 1000000;
-  const target = req.query.TARGET; // TARGET parameter
+  //const target = req.query.TARGET; // TARGET parameter
 
   // Building the SQL query
   let query = `
@@ -628,10 +628,10 @@ const advance_search_applications = async function (req, res) {
     annuityLow,
     annuityHigh,
   ];
-  if (target !== undefined) {
-    query += " AND TARGET = ?";
-    queryParams.push(target);
-  }
+  // if (target !== undefined) {
+  //   query += " AND TARGET = ?";
+  //   queryParams.push(target);
+  // }
 
   query += " ORDER BY SK_ID_CURR ASC;";
 
