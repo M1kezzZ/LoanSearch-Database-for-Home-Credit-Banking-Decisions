@@ -1,15 +1,13 @@
-//TASK: to implement "more info" card
-//TASK: to test if previous application and applicant data are retrieved and displayed correctly
-//TASK: to implement overall %late and %payed data
-//TASK: to implement loyalty data
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper } from '@mui/material';
 const config = require('../config.json');
 
 export default function ApplicantPage() {
     const [applicantData, setApplicantData] = useState({});
     const [previousApplications, setPreviousApplications] = useState([]);
+    const [latePaymentData, setLatePaymentData] = useState({});
+    const [loyaltyData, setLoyaltyData] = useState({});
     const [selectedPrevAppId, setSelectedPrevAppId] = useState('');
     const [isDataFetched, setIsDataFetched] = useState(false);
     const { applicantId } = useParams(); // Access the applicantId from the URL
@@ -27,6 +25,16 @@ export default function ApplicantPage() {
                 const previousAppsResponse = await fetch(`http://${config.server_host}:${config.server_port}/applicant/previous_applications/${applicantId}`);
                 const previousAppsJson = await previousAppsResponse.json();
                 setPreviousApplications(previousAppsJson);
+
+                // Fetch late payment data
+                const latePaymentResponse = await fetch(`http://${config.server_host}:${config.server_port}/applicant/late_payment/${applicantId}`);
+                const latePaymentJson = await latePaymentResponse.json();
+                setLatePaymentData(latePaymentJson);
+
+                // Fetch loyalty data
+                const loyaltyResponse = await fetch(`http://${config.server_host}:${config.server_port}/applicant/assess_loyalty/${applicantId}`);
+                const loyaltyJson = await loyaltyResponse.json();
+                setLoyaltyData(loyaltyJson);
 
                 setIsDataFetched(true);
             } catch (error) {
@@ -65,39 +73,70 @@ export default function ApplicantPage() {
         { name: "Annuity Amount", value: applicantData.amt_annuity },
     ];
 
+    const latePaymentTable = [
+        { name: "Overall percentage of late payment", value: latePaymentData.percentage_late_payments },
+        { name: "Overall percentage of amount paid", value: latePaymentData.percentage_amount_paid },
+    ]
+
     return (
         <div>
-            <div className="navigation-buttons">
+            {/* <div className="navigation-buttons">
                 <button onClick={() => navigate('/')}>Homepage</button>
                 <button onClick={() => navigate('/advanced-search')}>Advanced Search</button>
                 <button onClick={() => navigate('/analytics')}>Analytics</button>
-            </div>
-
+            </div> */}
 
             {isDataFetched && (
                 <>
-                    <h1>Applicant ID: {applicantId}</h1>
+                    <h1 style={{ margin: '20px' }}>Applicant ID: {applicantId}</h1> {/* Add blank space */}
                     {/* Render applicant data*/}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {applicantTable.map((data, index) => (
-                                <tr key={index}>
-                                    <td>{data.name}</td>
-                                    <td>{data.value}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    
+
+                    <TableContainer component={Paper} >
+                        <Table style={{ margin: '20px' }} size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Item</TableCell>
+                                    <TableCell>Value</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {applicantTable.map((data, index) => (
+                                    <TableRow key={index} >
+                                        <TableCell style={{ width: '2rem' }}>{data.name}</TableCell>
+                                        <TableCell style={{ width: '2rem' }}>{data.value}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    <div className="info-button">
+                        <button onClick={() => navigate('/info')}>More Info</button>
+                    </div>
+
+                    <h2 style={{ margin: '20px' }}>Previous Payment History</h2>
+                    {/* Render previous late payment data */}
+                    <ul style={{ margin: '20px' }}>
+                        {latePaymentTable.map((data, index) => (
+                            <li key={index}>
+                                <span>{data.name}: </span>
+                                <span>{data.value}</span>
+                            </li>
+                        ))}
+                    </ul>
+
+                    <h2 style={{ margin: '20px' }}>Loyalty Assessment</h2>
+                    {/* Render loyalty data */}
+                    <ul style={{ margin: '20px' }}>
+                        <li>Number of previous applications: {loyaltyData.num_prev_applications}</li>
+                        <li>Trend of annuity: {loyaltyData.annuity_change}</li>
+                        <li>Trend of credit amount: {loyaltyData.credit_amount_change}</li>
+                    </ul>
+
+                    <h2 style={{ margin: '20px' }}>Previous Application</h2>
                     {/* Dropdown for selecting a previous application */}
-                    <label htmlFor="prevAppSelect">Select Previous Application:</label>
-                    <select id="prevAppSelect" value={selectedPrevAppId} onChange={handlePrevAppSelection}>
+                    <label style={{ margin: '20px' }} htmlFor="prevAppSelect">Select Previous Application:</label>
+                    <select style={{ margin: '20px' }} id="prevAppSelect" value={selectedPrevAppId} onChange={handlePrevAppSelection}>
                         <option value="">Select an Application</option>
                         {previousApplications.map(app => (
                             <option key={app.SK_ID_PREV} value={app.SK_ID_PREV}>
@@ -108,8 +147,8 @@ export default function ApplicantPage() {
 
                     {selectedPrevAppDetails && (
                         <div>
-                            <h2>Details for Application ID: {selectedPrevAppId}</h2>
-                            <ul>
+                            <h3 style={{ margin: '20px' }}>Details for Application ID: {selectedPrevAppId}</h3>
+                            <ul style={{ margin: '20px' }}>
                                 <li>Processed Days Ago: {selectedPrevAppDetails.processed_days_ago}</li>
                                 <li>Status: {selectedPrevAppDetails.status}</li>
                                 <li>Reject Reason: {selectedPrevAppDetails.reject_reason}</li>
@@ -119,16 +158,14 @@ export default function ApplicantPage() {
                         </div>
                     )}
                 </>
-            )}
-            <div className="info-button">
-                    <button onClick={() => navigate('/info')}>More Info</button>
-                </div>
+            )
+            }
 
-                <style jsx>{`
-                    .navigation-buttons {
-                        text-align: center;
-                        margin: 10px 0;
-                    }
+            <style jsx>{`
+                    // .navigation-buttons {
+                    //     text-align: center;
+                    //     margin: 10px 0;
+                    // }
                     .info-button {
                         text-align: center;
                         margin-top: 20px;
@@ -140,7 +177,7 @@ export default function ApplicantPage() {
                         cursor: pointer;
                     }
                 `}</style>
-            </div>
+        </div >
     );
 }
 

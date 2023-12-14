@@ -343,8 +343,8 @@ connection.connect((err) => err && console.log(err));
 const applicant = async function (req, res) {
   const query = `
       SELECT
-          SK_ID_CURR AS applicant_id,
-          DAYS_BIRTH / 365 AS age,
+          SK_ID_CURR AS applicant_id,  
+          FLOOR(DAYS_BIRTH / 365 *(-1)) AS age,
           AMT_INCOME_TOTAL AS income,
           NAME_INCOME_TYPE AS income_type,
           OCCUPATION_TYPE AS occupation,
@@ -380,8 +380,8 @@ const late_payment = async function (req, res) {
   const query = `
       SELECT 
           SK_ID_CURR AS applicant_id,
-          SUM(CASE WHEN DAYS_INSTALMENT < DAYS_ENTRY_PAYMENT THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS percentage_late_payments,
-          SUM(AMT_PAYMENT) / SUM(AMT_INSTALMENT) * 100 AS percentage_amount_paid
+          CONCAT(FORMAT(SUM(CASE WHEN DAYS_INSTALMENT < DAYS_ENTRY_PAYMENT THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2), '%') AS percentage_late_payments,
+          CONCAT(FORMAT(SUM(AMT_PAYMENT) / SUM(AMT_INSTALMENT) * 100, 2), '%') AS percentage_amount_paid
       FROM installments_payments
       WHERE SK_ID_CURR = ?
       GROUP BY SK_ID_CURR;
@@ -415,8 +415,8 @@ const previous_applications = async function (req, res) {
       prev_late AS (
           SELECT
               SK_ID_PREV,
-              SUM(CASE WHEN DAYS_INSTALMENT < DAYS_ENTRY_PAYMENT THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS percentage_late_payments,
-              SUM(AMT_PAYMENT) / SUM(AMT_INSTALMENT) * 100 AS percentage_amount_paid
+              CONCAT(FORMAT(SUM(CASE WHEN DAYS_INSTALMENT < DAYS_ENTRY_PAYMENT THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2), '%') AS percentage_late_payments,
+              CONCAT(FORMAT(SUM(AMT_PAYMENT) / SUM(AMT_INSTALMENT) * 100, 2), '%') AS percentage_amount_paid
           FROM installments_payments
           WHERE SK_ID_CURR = ?
           GROUP BY SK_ID_PREV
@@ -502,15 +502,15 @@ const assess_loyalty = async function (req, res) {
 };
 
 let applicationFrequencyCache = {
-    data: null,
-    lastUpdated: 0,
-    expiryInSeconds: 3600 // 1 hour
-  };
-  
-  // Function to update cache for Route 5
-  async function updateApplicationFrequencyCache() {
-    // Replace with actual SQL query for Route 5
-    const query = `
+  data: null,
+  lastUpdated: 0,
+  expiryInSeconds: 3600 // 1 hour
+};
+
+// Function to update cache for Route 5
+async function updateApplicationFrequencyCache() {
+  // Replace with actual SQL query for Route 5
+  const query = `
         WITH Application_Intervals AS (
             SELECT 
                 SK_ID_CURR, 
@@ -537,18 +537,18 @@ let applicationFrequencyCache = {
         FROM Categorized_Intervals
         GROUP BY days_apart_category;
     `;
-    connection.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching data for application frequency:', err);
-            return;
-        }
-        applicationFrequencyCache = {
-            data: results,
-            lastUpdated: Date.now(),
-            expiryInSeconds: applicationFrequencyCache.expiryInSeconds
-        };
-    });
-  }
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data for application frequency:', err);
+      return;
+    }
+    applicationFrequencyCache = {
+      data: results,
+      lastUpdated: Date.now(),
+      expiryInSeconds: applicationFrequencyCache.expiryInSeconds
+    };
+  });
+}
 
 // route 5
 const application_frequency = async function (req, res) {
@@ -558,7 +558,7 @@ const application_frequency = async function (req, res) {
   if (
     applicationFrequencyCache.data &&
     currentTime - applicationFrequencyCache.lastUpdated <
-      applicationFrequencyCache.expiryInSeconds * 1000
+    applicationFrequencyCache.expiryInSeconds * 1000
   ) {
     // Returning cached data
     return res.json(applicationFrequencyCache.data);
@@ -582,14 +582,14 @@ const application_frequency = async function (req, res) {
 
 
 const homepage = async function (req, res) {
-    // Check if the cache for Route 5 needs updating
-    if ((Date.now() - applicationFrequencyCache.lastUpdated) / 1000 > applicationFrequencyCache.expiryInSeconds) {
-        await updateApplicationFrequencyCache();
-    }
-    
-    // Respond with a simple HTML page or JSON, depending on your application's requirement
-    res.send('<h1>Welcome to the Homepage</h1><p>Application Frequency Data is being updated in the background.</p>');
-    };
+  // Check if the cache for Route 5 needs updating
+  if ((Date.now() - applicationFrequencyCache.lastUpdated) / 1000 > applicationFrequencyCache.expiryInSeconds) {
+    await updateApplicationFrequencyCache();
+  }
+
+  // Respond with a simple HTML page or JSON, depending on your application's requirement
+  res.send('<h1>Welcome to the Homepage</h1><p>Application Frequency Data is being updated in the background.</p>');
+};
 
 
 // route 6
