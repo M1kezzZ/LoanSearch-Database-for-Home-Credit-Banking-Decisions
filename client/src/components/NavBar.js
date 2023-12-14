@@ -37,7 +37,7 @@ export default function NavBar() {
       <Container maxWidth='xl'>
         <Toolbar disableGutters>
           <NavText href='/' text='HOME CREDIT' isMain />
-          <NavText href='/advanced-search' text='Advanced Search' />
+          <NavText href='/advanced_search' text='Advanced Search' />
           <NavText href='/analytics' text='Analytics' />
         </Toolbar>
       </Container>
