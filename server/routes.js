@@ -678,7 +678,7 @@ const applications_count = async function (req, res) {
   const query = `
       WITH ApplicationDates AS (
           SELECT
-              DATE_ADD(CURRENT_DATE, INTERVAL -DAYS_DECISION DAY) AS application_date
+              DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date
           FROM previous_application
           WHERE -DAYS_DECISION <= 365 * 3
       )
@@ -730,7 +730,7 @@ const approval_rate = async function (req, res) {
   const query = `
       WITH ApplicationDates AS (
           SELECT
-              DATE_ADD(CURRENT_DATE, INTERVAL -DAYS_DECISION DAY) AS application_date,
+              DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date,
               NAME_CONTRACT_STATUS as contract_status
           FROM previous_application
           WHERE -DAYS_DECISION <= 365 * 3
