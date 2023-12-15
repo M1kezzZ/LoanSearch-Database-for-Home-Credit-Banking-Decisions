@@ -68,6 +68,9 @@ app.get("/analytics/approval_rate", routes.approval_rate);
 // Route: GET /applicant/applicant_trends/:applicant_id
 app.get("/applicant/applicant_trends/:applicant_id", routes.applicant_trends);
 
+// Route: GET /search
+app.get("/search", routes.advance_search_test);
+
 app.listen(config.server_port, () => {
   console.log(
     `Server running at http://${config.server_host}:${config.server_port}/`

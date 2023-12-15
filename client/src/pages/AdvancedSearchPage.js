@@ -1,106 +1,124 @@
 import React, { useState } from 'react';
-import {
-  Button,
-  Container,
-  Grid,
-  Slider,
-  Typography,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 const config = require("../config.json");
 
-export default function AdvancedSearch() {
-    const [searchResults, setSearchResults] = useState([]);
-    const [filters, setFilters] = useState({
-        incomeTotal: [50000, 100000],
-        credit: [50000, 100000],
-        annuity: [20000, 40000]
-    });
-   
 
-    const applyFilters = () => {
+function SearchComponent() {
+    const [minIncome, setMinIncome] = useState('');
+    const [maxIncome, setMaxIncome] = useState('');
+    const [minCredit, setMinCredit] = useState('');
+    const [maxCredit, setMaxCredit] = useState('');
+    const [minAnnuity, setMinAnnuity] = useState('');
+    const [maxAnnuity, setMaxAnnuity] = useState('');
+    const [results, setResults] = useState([]);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage] = useState(50);
+    
+    const tableStyle = {
+        width: '100%',        // Makes the table wider, taking the full width of its container
+        textAlign: 'center',  // Centers the text in all cells
+        borderCollapse: 'collapse', // Collapses borders between table cells
+    };
+    const fetchData = async () => {
         const queryParams = new URLSearchParams({
-            AMT_INCOME_TOTAL_low: filters.incomeTotal[0],
-            AMT_INCOME_TOTAL_high: filters.incomeTotal[1],
-            AMT_CREDIT_low: filters.credit[0],
-            AMT_CREDIT_high: filters.credit[1],
-            AMT_ANNUITY_low: filters.annuity[0],
-            AMT_ANNUITY_high: filters.annuity[1]
-        }).toString();
-
-        fetch(`http://${config.server_host}:${config.server_port}/advanced_search?${queryParams}`)
-            .then(res => res.json())
-            .then(data => setSearchResults(data))
-            .catch(error => console.error('Error fetching data:', error));
-    };
-
-    const handleSliderChange = (name) => (event, newValue) => {
-        setFilters({
-            ...filters,
-            [name]: newValue
+            minIncome,
+            maxIncome,
+            minCredit,
+            maxCredit,
+            minAnnuity,
+            maxAnnuity
         });
+
+    
+    const url = `http://${config.server_host}:${config.server_port}/search?${queryParams.toString()}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setResults(data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
     };
 
-    const columns = [
-        { field: "SK_ID_CURR", headerName: "ID", width: 150 },
-        { field: "AMT_INCOME_TOTAL", headerName: "Income Total", width: 200 },
-        { field: "AMT_CREDIT", headerName: "Credit Amount", width: 200 },
-        { field: "AMT_ANNUITY", headerName: "Annuity Amount", width: 200 },
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRows = results.slice(indexOfFirstRow, indexOfLastRow);
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    ];
+    const totalPages = Math.ceil(results.length / rowsPerPage);
+
+    // Function to determine page numbers to display
+    const pageNumbers = () => {
+        const windowSize = 5;
+        let start = Math.max(currentPage - 2, 1);
+        let end = Math.min(start + windowSize - 1, totalPages);
+
+        if (totalPages - start < windowSize) {
+            start = Math.max(totalPages - windowSize + 1, 1);
+        }
+
+        return Array.from({ length: (end - start) + 1 }, (_, i) => start + i);
+    };
 
     return (
-        <Container>
-            <Typography variant="h6" style={{ margin: '20px 0' }}>Range Search</Typography>
-            
-            <Grid container spacing={6}>
-                {/* First Line */}
-                <Grid item xs={6}>
-                    <Typography gutterBottom>Income Total Range</Typography>
-                    <Slider
-                        value={filters.incomeTotal}
-                        onChange={handleSliderChange('incomeTotal')}
-                        valueLabelDisplay="auto"
-                        min={50000}
-                        max={100000}
-                    />
-                </Grid>
-                <Grid item xs={6}>
-                    <Typography gutterBottom>Credit Amount Range</Typography>
-                    <Slider
-                        value={filters.credit}
-                        onChange={handleSliderChange('credit')}
-                        valueLabelDisplay="auto"
-                        min={50000}
-                        max={100000}
-                    />
-                </Grid>
+        <div>
+            {/* Input fields for ranges */}
+            <input type="number" placeholder="Min Income" value={minIncome} onChange={e => setMinIncome(e.target.value)} />
+            <input type="number" placeholder="Max Income" value={maxIncome} onChange={e => setMaxIncome(e.target.value)} />
+            <input type="number" placeholder="Min Credit" value={minCredit} onChange={e => setMinCredit(e.target.value)} />
+            <input type="number" placeholder="Max Credit" value={maxCredit} onChange={e => setMaxCredit(e.target.value)} />
+            <input type="number" placeholder="Min Annuity" value={minAnnuity} onChange={e => setMinAnnuity(e.target.value)} />
+            <input type="number" placeholder="Max Annuity" value={maxAnnuity} onChange={e => setMaxAnnuity(e.target.value)} />
 
-                {/* Second Line */}
-                <Grid item xs={6}>
-                    <Typography gutterBottom>Annuity Amount Range</Typography>
-                    <Slider
-                        value={filters.annuity}
-                        onChange={handleSliderChange('annuity')}
-                        valueLabelDisplay="auto"
-                        min={20000}
-                        max={40000}
-                    />
-                </Grid>
-            </Grid>
+            {/* Search Button */}
+            <button onClick={fetchData}>Search</button>
 
-            <Button variant="contained" onClick={applyFilters} style={{ margin: '20px 0' }}>Apply Filters</Button>
-
-            <DataGrid
-                rows={searchResults}
-                columns={columns}
-                pageSize={10}
-                autoHeight
-                rowsPerPageOptions={[5, 10, 25]}
-            />
-        </Container>
+            {/* Display Results */}
+            <table style={tableStyle}>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Gender</th>
+                        <th>Total Income</th>
+                        <th>Income Type</th>
+                        <th>Credit</th>
+                        <th>Annuity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {currentRows.map((row) => (
+                        <tr key={row.SK_ID_CURR}>
+                            <td>{row.SK_ID_CURR}</td>
+                            <td>{row.CODE_GENDER}</td>
+                            <td>{row.AMT_INCOME_TOTAL}</td>
+                            <td>{row.NAME_INCOME_TYPE}</td>
+                            <td>{row.AMT_CREDIT}</td>
+                            <td>{row.AMT_ANNUITY}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div>
+                <button onClick={() => paginate(1)} disabled={currentPage === 1}>First</button>
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>Previous</button>
+                {pageNumbers().map(number => (
+                    <button key={number} onClick={() => paginate(number)} disabled={number === currentPage}>
+                        {number}
+                    </button>
+                ))}
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
+                <button onClick={() => paginate(totalPages)} disabled={currentPage === totalPages}>Last</button>
+            </div>
+        </div>
     );
 }
 
+export default SearchComponent;
 
 

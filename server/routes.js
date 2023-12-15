@@ -601,7 +601,6 @@ const advance_search_applications = async function (req, res) {
   const creditHigh = req.query.AMT_CREDIT_high ?? 10000000;
   const annuityLow = req.query.AMT_ANNUITY_low ?? 0;
   const annuityHigh = req.query.AMT_ANNUITY_high ?? 1000000;
-  //const target = req.query.TARGET; // TARGET parameter
 
   // Building the SQL query
   let query = `
@@ -628,10 +627,6 @@ const advance_search_applications = async function (req, res) {
     annuityLow,
     annuityHigh,
   ];
-  // if (target !== undefined) {
-  //   query += " AND TARGET = ?";
-  //   queryParams.push(target);
-  // }
 
   query += " ORDER BY SK_ID_CURR ASC;";
 
@@ -645,7 +640,6 @@ const advance_search_applications = async function (req, res) {
     }
   });
 };
-
 
 
 // route 7
@@ -823,6 +817,45 @@ const applicant_trends = async function (req, res) {
   });
 };
 
+//route 11
+// This is your existing server-side route with minor adjustments.
+// Ensure that it returns all data when no filters are applied.
+
+const advance_search_test = async function (req, res) {
+  let minIncome = req.query.minIncome || 0;
+  let maxIncome = req.query.maxIncome || Number.MAX_SAFE_INTEGER;
+  let minCredit = req.query.minCredit || 0;
+  let maxCredit = req.query.maxCredit || Number.MAX_SAFE_INTEGER;
+  let minAnnuity = req.query.minAnnuity || 0;
+  let maxAnnuity = req.query.maxAnnuity || Number.MAX_SAFE_INTEGER;
+
+  let query = `
+      SELECT 
+          SK_ID_CURR,
+          CODE_GENDER,
+          AMT_INCOME_TOTAL,
+          NAME_INCOME_TYPE,
+          AMT_CREDIT,
+          AMT_ANNUITY
+      FROM applicants
+      WHERE AMT_INCOME_TOTAL BETWEEN ? AND ?
+      AND AMT_CREDIT BETWEEN ? AND ?
+      AND AMT_ANNUITY BETWEEN ? AND ?
+      ORDER BY SK_ID_CURR ASC
+  `;
+
+  connection.query(query, [minIncome, maxIncome, minCredit, maxCredit, minAnnuity, maxAnnuity], (err, data) => {
+    if (err) {
+      console.log(err);
+      res.json([]);
+    } else {
+      res.json(data);
+    }
+  });
+};
+
+
+
 module.exports = {
   applicant,
   late_payment,
@@ -835,4 +868,5 @@ module.exports = {
   approval_rate,
   applicant_trends,
   homepage,
+  advance_search_test
 };
