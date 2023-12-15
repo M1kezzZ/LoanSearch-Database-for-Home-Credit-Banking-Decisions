@@ -12,332 +12,130 @@ const connection = mysql.createConnection({
 });
 connection.connect((err) => err && console.log(err));
 
-// /******************
-//  * WARM UP ROUTES *
-//  ******************/
 
-// // Route 1: GET /author/:type
-// const author = async function (req, res) {
-//   // TODO (TASK 1): replace the values of name and pennKey with your own
-//   //done:
-//   const name = "Mike Peng";
-//   const pennKey = "mikepen";
+let applicationsCountCache = {
+  data: null,
+  lastUpdated: 0,
+  expiryInSeconds: 3600, // 1 hour
+};
 
-//   // checks the value of type the request parameters
-//   // note that parameters are required and are specified in server.js in the endpoint by a colon (e.g. /author/:type)
-//   if (req.params.type === "name") {
-//     // res.send returns data back to the requester via an HTTP response
-//     res.send(`Created by ${name}`);
-//   } else if (req.params.type === "pennkey") {
-//     // TODO (TASK 2): edit the else if condition to check if the request parameter is 'pennkey' and if so, send back response 'Created by [pennkey]'
-//     //done:
-//     res.send(`Created by ${pennKey}`);
-//   } else {
-//     // we can also send back an HTTP status code to indicate an improper request
-//     res
-//       .status(400)
-//       .send(
-//         `'${req.params.type}' is not a valid author type. Valid types are 'name' and 'pennkey'.`
-//       );
-//   }
-// };
+let approvalRateCache = {
+  data: null,
+  lastUpdated: 0,
+  expiryInSeconds: 3600, // 1 hour
+};
 
-// // Route 2: GET /random
-// const random = async function (req, res) {
-//   // you can use a ternary operator to check the value of request query values
-//   // which can be particularly useful for setting the default value of queries
-//   // note if users do not provide a value for the query it will be undefined, which is falsey
-//   const explicit = req.query.explicit === "true" ? 1 : 0;
+let applicationFrequencyCache = {
+  data: null,
+  lastUpdated: 0,
+  expiryInSeconds: 3600, // 1 hour
+};
 
-//   // Here is a complete example of how to query the database in JavaScript.
-//   // Only a small change (unrelated to querying) is required for TASK 3 in this route.
-//   connection.query(
-//     `
-//     SELECT *
-//     FROM Songs
-//     WHERE explicit <= ${explicit}
-//     ORDER BY RAND()
-//     LIMIT 1
-//   `,
-//     (err, data) => {
-//       if (err || data.length === 0) {
-//         // If there is an error for some reason, or if the query is empty (this should not be possible)
-//         // print the error message and return an empty object instead
-//         console.log(err);
-//         // Be cognizant of the fact we return an empty object {}. For future routes, depending on the
-//         // return type you may need to return an empty array [] instead.
-//         res.json({});
-//       } else {
-//         // Here, we return results of the query as an object, keeping only relevant data
-//         // being song_id and title which you will add. In this case, there is only one song
-//         // so we just directly access the first element of the query results array (data)
-//         // TODO (TASK 3): also return the song title in the response
-//         // done:
-//         res.json({
-//           song_id: data[0].song_id,
-//           title: data[0].title,
-//         });
-//       }
-//     }
-//   );
-// };
+// Function to update cache for Route 5
+async function updateApplicationFrequencyCache() {
+  // Replace with actual SQL query for Route 5
+  const query = `
+        WITH Application_Intervals AS (
+            SELECT 
+                SK_ID_CURR, 
+                DAYS_DECISION, 
+                LAG(DAYS_DECISION) OVER (PARTITION BY SK_ID_CURR ORDER BY DAYS_DECISION ASC) AS Previous_days_decision
+            FROM previous_application
+        ),
+        Categorized_Intervals AS (
+            SELECT 
+                SK_ID_CURR, 
+                CASE
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 50 THEN 'Up to 50 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 100 THEN '51 to 100 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 150 THEN '101 to 150 days'
+                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 200 THEN '151 to 200 days'
+                    ELSE 'More than 200 days'
+                END AS days_apart_category
+            FROM Application_Intervals
+            WHERE Previous_DAYS_DECISION IS NOT NULL
+        )
+        SELECT 
+            days_apart_category,
+            COUNT(*) AS application_count
+        FROM Categorized_Intervals
+        GROUP BY days_apart_category;
+    `;
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching data for application frequency:", err);
+      return;
+    }
+    applicationFrequencyCache = {
+      data: results,
+      lastUpdated: Date.now(),
+      expiryInSeconds: applicationFrequencyCache.expiryInSeconds,
+    };
+  });
+}
 
-// /********************************
-//  * BASIC SONG/ALBUM INFO ROUTES *
-//  ********************************/
+// function to update route 8 cache
+async function updateApplicationsCountCache() {
+  const applicationsCountQuery = `WITH ApplicationDates AS (
+    SELECT
+        DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date
+    FROM previous_application
+    WHERE -DAYS_DECISION <= 365 * 3
+)
+SELECT
+    YEAR(application_date) AS Year,
+    MONTH(application_date) AS Month,
+    COUNT(*) AS total_applications
+FROM ApplicationDates
+GROUP BY YEAR(application_date), MONTH(application_date)
+ORDER BY Year, Month;`; // Replace with the actual SQL query
 
-// // Route 3: GET /song/:song_id
-// const song = async function (req, res) {
-//   // TODO (TASK 4): implement a route that given a song_id, returns all information about the song
-//   // Hint: unlike route 2, you can directly SELECT * and just return data[0]
-//   // Most of the code is already written for you, you just need to fill in the query
-//   connection.query(
-//     `
-//     SELECT *
-//     FROM Songs
-//     WHERE song_id = ?
-//     `,
-//     [req.params.song_id],
-//     (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json({});
-//       } else {
-//         res.json(data[0]);
-//       }
-//     }
-//   );
-// };
+  connection.query(applicationsCountQuery, (err, results) => {
+    if (!err) {
+      applicationsCountCache = {
+        data: results,
+        lastUpdated: Date.now(),
+        expiryInSeconds: applicationsCountCache.expiryInSeconds,
+      };
+    }
+  });
+}
 
-// // Route 4: GET /album/:album_id
-// const album = async function (req, res) {
-//   // TODO (TASK 5): implement a route that given a album_id, returns all information about the album
-//   const album_id = req.params.album_id;
-//   connection.query(
-//     `
-//   SELECT *
-//   FROM Albums
-//   WHERE album_id = ?
-//   `,
-//     [album_id],
-//     (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json({});
-//       } else {
-//         res.json(data[0]);
-//       }
-//     }
-//   );
-// };
+// Function to update approval rate cache (route 9)
+async function updateApprovalRateCache() {
+  const approvalRateQuery = `WITH ApplicationDates AS (
+    SELECT
+        DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date,
+        NAME_CONTRACT_STATUS as contract_status
+    FROM previous_application
+    WHERE -DAYS_DECISION <= 365 * 3
+),
+MonthlyApplications AS (
+    SELECT
+        YEAR(application_date) AS Year,
+        MONTH(application_date) AS Month,
+        COUNT(*) AS total_applications,
+        SUM(CASE WHEN contract_status = 'Approved' THEN 1 ELSE 0 END) AS approved_applications
+    FROM ApplicationDates
+    GROUP BY YEAR(application_date), MONTH(application_date)
+)
+SELECT
+    Year,
+    Month,
+    IFNULL((approved_applications / total_applications) * 100, 0) AS approval_rate
+FROM MonthlyApplications
+ORDER BY Year, Month;`; // Replace with the actual SQL query
 
-// // Route 5: GET /albums
-// const albums = async function (req, res) {
-//   // TODO (TASK 6): implement a route that returns all albums ordered by release date (descending)
-//   // Note that in this case you will need to return multiple albums, so you will need to return an array of objects
-//   connection.query(
-//     `SELECT *
-//     FROM Albums
-//     ORDER BY release_date DESC`,
-//     (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     }
-//   );
-// };
-
-// // Route 6: GET /album_songs/:album_id
-// const album_songs = async function (req, res) {
-//   // TODO (TASK 7): implement a route that given an album_id, returns all songs on that album ordered by track number (ascending)
-//   const album_id = req.params.album_id;
-//   connection.query(
-//     `
-//   SELECT
-//     song_id,
-//     title,
-//     number,
-//     duration,
-//     plays
-//   FROM Songs
-//   WHERE album_id = ?
-//   ORDER BY number ASC
-// `,
-//     [album_id],
-//     (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     }
-//   );
-// };
-
-// /************************
-//  * ADVANCED INFO ROUTES *
-//  ************************/
-
-// // Route 7: GET /top_songs
-// const top_songs = async function (req, res) {
-//   const page = req.query.page;
-//   // TODO (TASK 8): use the ternary (or nullish) operator to set the pageSize based on the query or default to 10
-//   //const pageSize = parseInt(req.query.pageSize ?? 10);
-//   //const pagesize = req.query.page_size
-//   const pageSize = req.query.page_size ? parseInt(req.query.page_size) : 10;
-//   const q1 = `
-//   SELECT
-//     s.song_id,
-//     s.title,
-//     s.album_id,
-//     a.title AS album,
-//     s.plays
-//   FROM Songs s
-//   JOIN Albums a ON s.album_id = a.album_id
-//   ORDER BY s.plays DESC
-// `;
-//   if (!page) {
-//     // TODO (TASK 9)): query the database and return all songs ordered by number of plays (descending)
-//     // Hint: you will need to use a JOIN to get the album title as well
-//     connection.query(q1, (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     });
-//   } else {
-//     // TODO (TASK 10): reimplement TASK 9 with pagination
-//     // Hint: use LIMIT and OFFSET (see https://www.w3schools.com/php/php_mysql_select_limit.asp)
-
-//     const q2 = `${q1} LIMIT ? OFFSET ?`;
-//     const offset = (page - 1) * pageSize;
-//     connection.query(q2, [pageSize, offset], (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     });
-//   }
-// };
-
-// // Route 8: GET /top_albums
-// const top_albums = async function (req, res) {
-//   // TODO (TASK 11): return the top albums ordered by aggregate number of plays of all songs on the album (descending), with optional pagination (as in route 7)
-//   // Hint: you will need to use a JOIN and aggregation to get the total plays of songs in an album
-//   const page = req.query.page;
-//   const pageSize = req.query.page_size ? parseInt(req.query.page_size) : 10;
-//   const q1 = `
-//       SELECT
-//       a.album_id,
-//       a.title,
-//       SUM(s.plays) AS plays
-//     FROM Albums a
-//     LEFT JOIN Songs s ON a.album_id = s.album_id
-//     GROUP BY a.album_id, a.title
-//     ORDER BY plays DESC`;
-//   if (!page) {
-//     connection.query(q1, (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     });
-//   } else {
-//     const q2 = `${q1} LIMIT ? OFFSET ?`;
-//     const offset = (page - 1) * pageSize;
-//     connection.query(q2, [pageSize, offset], (err, data) => {
-//       if (err || data.length === 0) {
-//         console.log(err);
-//         res.json([]);
-//       } else {
-//         res.json(data);
-//       }
-//     });
-//   }
-// };
-
-// // Route 9: GET /search_albums
-// const search_songs = async function (req, res) {
-//   // TODO (TASK 12): return all songs that match the given search query with parameters defaulted to those specified in API spec ordered by title (ascending)
-//   // Some default parameters have been provided for you, but you will need to fill in the rest
-//   const title = req.query.title ?? "";
-//   const durationLow = req.query.duration_low ?? 60;
-//   const durationHigh = req.query.duration_high ?? 660;
-//   const playsLow = req.query.plays_low ?? 0;
-//   const playsHigh = req.query.plays_high ?? 1100000000;
-//   const danceabilityLow = req.query.danceability_low ?? 0;
-//   const danceabilityHigh = req.query.danceability_high ?? 1;
-//   const energyLow = req.query.energy_low ?? 0;
-//   const energyHigh = req.query.energy_high ?? 1;
-//   const valenceLow = req.query.valence_low ?? 0;
-//   const valenceHigh = req.query.valence_high ?? 1;
-//   const explicit = req.query.explicit === "true";
-
-//   let query = `
-//     SELECT
-//       song_id, album_id, title, duration, plays, danceability,
-//       energy, valence, number, tempo, key_mode, explicit
-//     FROM Songs
-//     WHERE
-//       duration BETWEEN ? AND ?
-//       AND plays BETWEEN ? AND ?
-//       AND danceability BETWEEN ? AND ?
-//       AND energy BETWEEN ? AND ?
-//       AND valence BETWEEN ? AND ?
-//       AND title LIKE ?
-//   `;
-
-//   if (!explicit) {
-//     query += " AND explicit = 0";
-//   }
-
-//   query += " ORDER BY title ASC";
-
-//   const params = [
-//     durationLow,
-//     durationHigh,
-//     playsLow,
-//     playsHigh,
-//     danceabilityLow,
-//     danceabilityHigh,
-//     energyLow,
-//     energyHigh,
-//     valenceLow,
-//     valenceHigh,
-//     `%${title}%`,
-//   ];
-
-//   connection.query(query, params, (err, data) => {
-//     if (err) {
-//       console.log(err);
-//       res.json([]);
-//     } else {
-//       res.json(data);
-//     }
-//   });
-// };
-
-// module.exports = {
-//   author,
-//   random,
-//   song,
-//   album,
-//   albums,
-//   album_songs,
-//   top_songs,
-//   top_albums,
-//   search_songs,
-// };
+  connection.query(approvalRateQuery, (err, results) => {
+    if (!err) {
+      approvalRateCache = {
+        data: results,
+        lastUpdated: Date.now(),
+        expiryInSeconds: approvalRateCache.expiryInSeconds,
+      };
+    }
+  });
+}
 
 // route 1
 const applicant = async function (req, res) {
@@ -501,55 +299,6 @@ const assess_loyalty = async function (req, res) {
   );
 };
 
-let applicationFrequencyCache = {
-  data: null,
-  lastUpdated: 0,
-  expiryInSeconds: 3600 // 1 hour
-};
-
-// Function to update cache for Route 5
-async function updateApplicationFrequencyCache() {
-  // Replace with actual SQL query for Route 5
-  const query = `
-        WITH Application_Intervals AS (
-            SELECT 
-                SK_ID_CURR, 
-                DAYS_DECISION, 
-                LAG(DAYS_DECISION) OVER (PARTITION BY SK_ID_CURR ORDER BY DAYS_DECISION ASC) AS Previous_days_decision
-            FROM previous_application
-        ),
-        Categorized_Intervals AS (
-            SELECT 
-                SK_ID_CURR, 
-                CASE
-                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 50 THEN 'Up to 50 days'
-                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 100 THEN '51 to 100 days'
-                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 150 THEN '101 to 150 days'
-                    WHEN ABS(DAYS_DECISION - Previous_DAYS_DECISION) <= 200 THEN '151 to 200 days'
-                    ELSE 'More than 200 days'
-                END AS days_apart_category
-            FROM Application_Intervals
-            WHERE Previous_DAYS_DECISION IS NOT NULL
-        )
-        SELECT 
-            days_apart_category,
-            COUNT(*) AS application_count
-        FROM Categorized_Intervals
-        GROUP BY days_apart_category;
-    `;
-  connection.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching data for application frequency:', err);
-      return;
-    }
-    applicationFrequencyCache = {
-      data: results,
-      lastUpdated: Date.now(),
-      expiryInSeconds: applicationFrequencyCache.expiryInSeconds
-    };
-  });
-}
-
 // route 5
 const application_frequency = async function (req, res) {
   const currentTime = Date.now();
@@ -558,7 +307,7 @@ const application_frequency = async function (req, res) {
   if (
     applicationFrequencyCache.data &&
     currentTime - applicationFrequencyCache.lastUpdated <
-    applicationFrequencyCache.expiryInSeconds * 1000
+      applicationFrequencyCache.expiryInSeconds * 1000
   ) {
     // Returning cached data
     return res.json(applicationFrequencyCache.data);
@@ -579,18 +328,6 @@ const application_frequency = async function (req, res) {
       });
   }
 };
-
-
-const homepage = async function (req, res) {
-  // Check if the cache for Route 5 needs updating
-  if ((Date.now() - applicationFrequencyCache.lastUpdated) / 1000 > applicationFrequencyCache.expiryInSeconds) {
-    await updateApplicationFrequencyCache();
-  }
-
-  // Respond with a simple HTML page or JSON, depending on your application's requirement
-  res.send('<h1>Welcome to the Homepage</h1><p>Application Frequency Data is being updated in the background.</p>');
-};
-
 
 // route 6
 const advance_search_applications = async function (req, res) {
@@ -641,7 +378,6 @@ const advance_search_applications = async function (req, res) {
   });
 };
 
-
 // route 7
 const applicant_more = async function (req, res) {
   const query = `
@@ -669,115 +405,42 @@ const applicant_more = async function (req, res) {
 
 // route 8
 const applications_count = async function (req, res) {
-  const query = `
-      WITH ApplicationDates AS (
-          SELECT
-              DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date
-          FROM previous_application
-          WHERE -DAYS_DECISION <= 365 * 3
-      )
-      SELECT
-          YEAR(application_date) AS Year,
-          MONTH(application_date) AS Month,
-          COUNT(*) AS total_applications
-      FROM ApplicationDates
-      GROUP BY YEAR(application_date), MONTH(application_date)
-      ORDER BY Year, Month;
-  `;
-
-  connection.query(query, (err, data) => {
-    if (err) {
-      console.log(err);
-      res.json({});
-    } else {
-      // Ensuring that months with no applications are included with a count of zero
-      const currentDate = new Date();
-      const threeYearsAgo = new Date(
-        currentDate.getFullYear() - 3,
-        currentDate.getMonth(),
-        1
-      );
-      let result = [];
-      for (
-        let d = threeYearsAgo;
-        d <= currentDate;
-        d.setMonth(d.getMonth() + 1)
-      ) {
-        let year = d.getFullYear();
-        let month = d.getMonth() + 1;
-        let found = data.find(
-          (row) => row.Year === year && row.Month === month
-        );
-        result.push({
-          Year: year,
-          Month: month,
-          total_applications: found ? found.total_applications : 0,
-        });
-      }
-      res.json(result);
-    }
-  });
+  const currentTime = Date.now();
+  if (
+    currentTime - applicationsCountCache.lastUpdated <
+    applicationsCountCache.expiryInSeconds * 1000
+  ) {
+    return res.json(applicationsCountCache.data);
+  } else {
+    updateApplicationsCountCache()
+      .then(() => {
+        res.json(applicationsCountCache.data);
+      })
+      .catch((err) => {
+        console.error("Error updating applications count cache:", err);
+        res.status(500).send("Error fetching applications count");
+      });
+  }
 };
 
 // route 9
 const approval_rate = async function (req, res) {
-  const query = `
-      WITH ApplicationDates AS (
-          SELECT
-              DATE_ADD(CURRENT_DATE, INTERVAL DAYS_DECISION DAY) AS application_date,
-              NAME_CONTRACT_STATUS as contract_status
-          FROM previous_application
-          WHERE -DAYS_DECISION <= 365 * 3
-      ),
-      MonthlyApplications AS (
-          SELECT
-              YEAR(application_date) AS Year,
-              MONTH(application_date) AS Month,
-              COUNT(*) AS total_applications,
-              SUM(CASE WHEN contract_status = 'Approved' THEN 1 ELSE 0 END) AS approved_applications
-          FROM ApplicationDates
-          GROUP BY YEAR(application_date), MONTH(application_date)
-      )
-      SELECT
-          Year,
-          Month,
-          IFNULL((approved_applications / total_applications) * 100, 0) AS approval_rate
-      FROM MonthlyApplications
-      ORDER BY Year, Month;
-  `;
-
-  connection.query(query, (err, data) => {
-    if (err) {
-      console.log(err);
-      res.json({});
-    } else {
-      // Ensuring that months with no applications are included with an approval rate of zero
-      const currentDate = new Date();
-      const threeYearsAgo = new Date(
-        currentDate.getFullYear() - 3,
-        currentDate.getMonth(),
-        1
-      );
-      let result = [];
-      for (
-        let d = threeYearsAgo;
-        d <= currentDate;
-        d.setMonth(d.getMonth() + 1)
-      ) {
-        let year = d.getFullYear();
-        let month = d.getMonth() + 1;
-        let found = data.find(
-          (row) => row.Year === year && row.Month === month
-        );
-        result.push({
-          Year: year,
-          Month: month,
-          approval_rate: found ? found.approval_rate : 0,
-        });
-      }
-      res.json(result);
-    }
-  });
+  const currentTime = Date.now();
+  if (
+    currentTime - approvalRateCache.lastUpdated <
+    approvalRateCache.expiryInSeconds * 1000
+  ) {
+    return res.json(approvalRateCache.data);
+  } else {
+    updateApprovalRateCache()
+      .then(() => {
+        res.json(approvalRateCache.data);
+      })
+      .catch((err) => {
+        console.error("Error updating approval rate cache:", err);
+        res.status(500).send("Error fetching approval rate");
+      });
+  }
 };
 
 // route 10
@@ -844,17 +507,53 @@ const advance_search_test = async function (req, res) {
       ORDER BY SK_ID_CURR ASC
   `;
 
-  connection.query(query, [minIncome, maxIncome, minCredit, maxCredit, minAnnuity, maxAnnuity], (err, data) => {
-    if (err) {
-      console.log(err);
-      res.json([]);
-    } else {
-      res.json(data);
+  connection.query(
+    query,
+    [minIncome, maxIncome, minCredit, maxCredit, minAnnuity, maxAnnuity],
+    (err, data) => {
+      if (err) {
+        console.log(err);
+        res.json([]);
+      } else {
+        res.json(data);
+      }
     }
-  });
+  );
 };
 
+const homepage = async function (req, res) {
+  // Current time
+  const currentTime = Date.now();
 
+  // Check if the cache for Route 5 needs updating
+  if (
+    (currentTime - applicationFrequencyCache.lastUpdated) / 1000 >
+    applicationFrequencyCache.expiryInSeconds
+  ) {
+    await updateApplicationFrequencyCache();
+  }
+
+  // Check if the cache for Route 8 needs updating
+  if (
+    (currentTime - applicationsCountCache.lastUpdated) / 1000 >
+    applicationsCountCache.expiryInSeconds
+  ) {
+    await updateApplicationsCountCache();
+  }
+
+  // Check if the cache for Route 9 needs updating
+  if (
+    (currentTime - approvalRateCache.lastUpdated) / 1000 >
+    approvalRateCache.expiryInSeconds
+  ) {
+    await updateApprovalRateCache();
+  }
+
+  // Respond with a simple HTML page
+  res.send(
+    "<h1>Welcome to the Homepage</h1><p>Caches for Application Frequency, Applications Count, and Approval Rate are being updated in the background.</p>"
+  );
+};
 
 module.exports = {
   applicant,
@@ -868,5 +567,5 @@ module.exports = {
   approval_rate,
   applicant_trends,
   homepage,
-  advance_search_test
+  advance_search_test,
 };
