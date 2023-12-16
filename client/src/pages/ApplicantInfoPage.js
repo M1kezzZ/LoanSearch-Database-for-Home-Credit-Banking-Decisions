@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams} from 'react-router-dom';
-import { TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, Divider } from '@mui/material';
+import { useParams } from 'react-router-dom';
+import { Container, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, Divider, Box } from '@mui/material';
 
 import MoreInfo from '../components/MoreInfo';
 const config = require('../config.json');
@@ -89,10 +89,10 @@ export default function ApplicantPage() {
     ]
 
     return (
-        <div>
+        <Container>
             {isDataFetched && (
                 <>
-                    <h1 style={{ margin: '20px' }}>Applicant ID: {applicantId}</h1>
+                    <h1 >Applicant ID: {applicantId}</h1>
                     {/* Render applicant data*/}
 
                     <TableContainer component={Paper} >
@@ -114,15 +114,16 @@ export default function ApplicantPage() {
                         </Table>
                     </TableContainer>
                     <Divider />
-                    
+
                     <button onClick={handleOpenMoreInfo}> More Info </button>
 
                     {showMoreInfo && (
                         <MoreInfo applicantId={applicantId} handleClose={handleCloseMoreInfo} />
                     )}
-                    <h2 style={{ margin: '20px' }}>Previous Payment History</h2>
+
+                    <h2>Previous Payment History</h2>
                     {/* Render previous late payment data */}
-                    <ul style={{ margin: '20px' }}>
+                    <ul>
                         {latePaymentTable.map((data, index) => (
                             <li key={index}>
                                 <span>{data.name}: </span>
@@ -130,19 +131,19 @@ export default function ApplicantPage() {
                             </li>
                         ))}
                     </ul>
-                    
-                    <h2 style={{ margin: '20px' }}>Loyalty Assessment</h2>
+
+                    <h2>Loyalty Assessment</h2>
                     {/* Render loyalty data */}
-                    <ul style={{ margin: '20px' }}>
+                    <ul >
                         <li>Number of previous applications: {loyaltyData.num_prev_applications}</li>
                         <li>Trend of annuity: {loyaltyData.annuity_change}</li>
                         <li>Trend of credit amount: {loyaltyData.credit_amount_change}</li>
                     </ul>
 
-                    <h2 style={{ margin: '20px' }}>Previous Application</h2>
+                    <h2>Previous Application</h2>
                     {/* Dropdown for selecting a previous application */}
-                    <label style={{ margin: '20px' }} htmlFor="prevAppSelect">Select Previous Application:</label>
-                    <select style={{ margin: '20px' }} id="prevAppSelect" value={selectedPrevAppId} onChange={handlePrevAppSelection}>
+                    <label htmlFor="prevAppSelect">Select Previous Application:</label>
+                    <select id="prevAppSelect" value={selectedPrevAppId} onChange={handlePrevAppSelection}>
                         <option value="">Select an Application</option>
                         {previousApplications.map(app => (
                             <option key={app.SK_ID_PREV} value={app.SK_ID_PREV}>
@@ -152,26 +153,22 @@ export default function ApplicantPage() {
                     </select>
 
                     {selectedPrevAppDetails && (
-                        <div>
-                            <h3 style={{ margin: '20px' }}>Details for Application ID: {selectedPrevAppId}</h3>
-                            <ul style={{ margin: '20px' }}>
+                        <Box>
+                            <h3>Details for Application ID: {selectedPrevAppId}</h3>
+                            <ul>
                                 <li>Processed Days Ago: {selectedPrevAppDetails.processed_days_ago}</li>
                                 <li>Status: {selectedPrevAppDetails.status}</li>
                                 <li>Reject Reason: {selectedPrevAppDetails.reject_reason}</li>
                                 <li>Percentage Late Payments: {selectedPrevAppDetails.percentage_late_payments}</li>
                                 <li>Percentage Amount Paid: {selectedPrevAppDetails.percentage_amount_paid}</li>
                             </ul>
-                        </div>
+                        </Box>
                     )}
                 </>
             )
             }
 
             <style jsx>{`
-                    // .navigation-buttons {
-                    //     text-align: center;
-                    //     margin: 10px 0;
-                    // }
                     .info-button {
                         text-align: center;
                         margin-top: 20px;
@@ -183,7 +180,9 @@ export default function ApplicantPage() {
                         cursor: pointer;
                     }
                 `}</style>
-        </div >
+            <div style={{ height: '100px' }}></div> {/* Add blank space */}
+
+        </Container >
     );
 }
 
