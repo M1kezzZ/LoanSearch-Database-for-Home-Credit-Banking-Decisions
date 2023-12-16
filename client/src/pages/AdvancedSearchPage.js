@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Container } from '@mui/material';
-
+import { Link } from 'react-router-dom';
 const config = require("../config.json");
-
 
 function SearchComponent() {
     const [minIncome, setMinIncome] = useState('');
@@ -96,6 +94,11 @@ function SearchComponent() {
                 <tbody>
                     {currentRows.map((row) => (
                         <tr key={row.SK_ID_CURR}>
+                            <td>
+                                <Link to={`/applicantpage/${row.SK_ID_CURR}`}>
+                                {row.SK_ID_CURR}
+                                </Link>
+                            </td>
                             <td>{row.SK_ID_CURR}</td>
                             <td>{row.CODE_GENDER}</td>
                             <td>{row.AMT_INCOME_TOTAL}</td>
