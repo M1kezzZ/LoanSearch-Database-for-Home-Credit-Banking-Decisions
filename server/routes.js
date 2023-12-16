@@ -389,13 +389,17 @@ const advance_search_applications = async function (req, res) {
 
 // route 7: Simply return some side information about the application/client (if we have the client id).
 // This will be in a new info page if someone wants to check further infos.
+
 const applicant_more = async function (req, res) {
   const query = `
       SELECT
           REGION_RATING_CLIENT, -- 1,2,3
           WEEKDAY_APPR_PROCESS_START, -- On which day of the week did the client apply for the loan
           HOUR_APPR_PROCESS_START, -- Approximately at what hour did the client apply for the loan
-          REG_REGION_NOT_LIVE_REGION, -- Flag if client's permanent address does not match contact address (1=different, 0=same, at region level)
+          CASE REG_REGION_NOT_LIVE_REGION
+              WHEN 1 THEN 'different'
+              WHEN 0 THEN 'same'
+          END AS ADDRESS_MATCH, -- Flag if client's permanent address does not match contact address (1=different, 0=same, at region level)
           ORGANIZATION_TYPE -- Type of organization where client works
       FROM applicants
       WHERE SK_ID_CURR = ?
