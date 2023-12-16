@@ -4,7 +4,6 @@ import { TableContainer, Table, TableBody, TableRow, TableCell, Paper } from '@m
 
 const config = require('../config.json');
 
-// MoreInfo is a modal to display a new dialog window
 export default function MoreInfo({ applicantId, handleClose }) {
     const [moreInfo, setMoreInfo] = useState({})
 
@@ -12,10 +11,14 @@ export default function MoreInfo({ applicantId, handleClose }) {
         fetch(`http://${config.server_host}:${config.server_port}/applicant/more/${applicantId}`)
             .then(res => res.json())
             .then(resJson => {
-                setMoreInfo(resJson)
+                if (resJson.length > 0) {
+                    setMoreInfo(resJson[0]); // Set the first object of the array to moreInfo
+                }
             })
+            .catch(error => {
+                console.error('Error fetching more info:', error);
+            });
     }, [applicantId]);
-
 
     const infoData = [
         { name: 'Application day of the week', value: moreInfo.WEEKDAY_APPR_PROCESS_START },
@@ -23,7 +26,7 @@ export default function MoreInfo({ applicantId, handleClose }) {
         { name: 'If permanent address matches contact address', value: moreInfo.ADDRESS_MATCH },
         { name: 'Region rating', value: moreInfo.REGION_RATING_CLIENT },
         { name: 'Type of organization where client works', value: moreInfo.ORGANIZATION_TYPE }
-    ]
+    ];
 
     return (
         <Modal
@@ -31,24 +34,24 @@ export default function MoreInfo({ applicantId, handleClose }) {
             onClose={handleClose}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-            <Box p={3} style={{ backgroundColor: 'white', width: '600', borderRadius: '10px' }}>
-                <h1 style={{ margin: '20px' }}>More information: {applicantId}</h1>
-                <TableContainer component={Paper} >
+            <Box p={3} style={{ backgroundColor: 'white', maxWidth: '600px', borderRadius: '10px', outline: 'none' }}>
+                <h1 style={{ margin: '20px' }}>More Information: {applicantId}</h1>
+                <TableContainer component={Paper}>
                     <Table style={{ margin: '20px' }} size="small">
                         <TableBody>
                             {infoData.map((data, index) => (
-                                <TableRow key={index} >
-                                    <TableCell style={{ width: '2rem' }}>{data.name}</TableCell>
-                                    <TableCell style={{ width: '2rem' }}>{data.value}</TableCell>
+                                <TableRow key={index}>
+                                    <TableCell style={{ width: '50%' }}>{data.name}</TableCell>
+                                    <TableCell>{data.value}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
+                <Button onClick={handleClose} style={{ display: 'block', margin: '20px auto' }}>
+                    Close
+                </Button>
             </Box>
-            <Button onClick={handleClose} style={{ left: '50%', transform: 'translateX(-50%)' }} >
-                Close
-            </Button>
-        </ Modal>
-    )
+        </Modal>
+    );
 }
