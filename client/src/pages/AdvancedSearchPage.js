@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Container, Box } from '@mui/material';
+
 const config = require("../config.json");
 
 
@@ -14,7 +16,7 @@ function SearchComponent() {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage] = useState(50);
-    
+
     const tableStyle = {
         width: '100%',        // Makes the table wider, taking the full width of its container
         textAlign: 'center',  // Centers the text in all cells
@@ -30,8 +32,8 @@ function SearchComponent() {
             maxAnnuity
         });
 
-    
-    const url = `http://${config.server_host}:${config.server_port}/search?${queryParams.toString()}`;
+
+        const url = `http://${config.server_host}:${config.server_port}/search?${queryParams.toString()}`;
 
         try {
             const response = await fetch(url);
@@ -66,7 +68,8 @@ function SearchComponent() {
     };
 
     return (
-        <div>
+        <Container>
+            <div style={{ height: '30px' }}></div> {/* Add blank space */}
             {/* Input fields for ranges */}
             <input type="number" placeholder="Min Income" value={minIncome} onChange={e => setMinIncome(e.target.value)} />
             <input type="number" placeholder="Max Income" value={maxIncome} onChange={e => setMaxIncome(e.target.value)} />
@@ -115,7 +118,7 @@ function SearchComponent() {
                 <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
                 <button onClick={() => paginate(totalPages)} disabled={currentPage === totalPages}>Last</button>
             </div>
-        </div>
+        </Container>
     );
 }
 
