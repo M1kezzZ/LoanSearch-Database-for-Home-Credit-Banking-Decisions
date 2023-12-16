@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper } from '@mui/material';
+import { useParams } from 'react-router-dom';
+import { TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, Divider } from '@mui/material';
+
+import MoreInfo from '../components/MoreInfo';
 const config = require('../config.json');
 
 export default function ApplicantPage() {
@@ -10,8 +12,8 @@ export default function ApplicantPage() {
     const [loyaltyData, setLoyaltyData] = useState({});
     const [selectedPrevAppId, setSelectedPrevAppId] = useState('');
     const [isDataFetched, setIsDataFetched] = useState(false);
+    const [showMoreInfo, setShowMoreInfo] = useState(false);
     const { applicantId } = useParams(); // Access the applicantId from the URL
-    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -80,15 +82,10 @@ export default function ApplicantPage() {
 
     return (
         <div>
-            {/* <div className="navigation-buttons">
-                <button onClick={() => navigate('/')}>Homepage</button>
-                <button onClick={() => navigate('/advanced-search')}>Advanced Search</button>
-                <button onClick={() => navigate('/analytics')}>Analytics</button>
-            </div> */}
-
+            {showMoreInfo && <MoreInfo applicantId={applicantId} handleClose={() => setShowMoreInfo(false)} />}
             {isDataFetched && (
                 <>
-                    <h1 style={{ margin: '20px' }}>Applicant ID: {applicantId}</h1> {/* Add blank space */}
+                    <h1 style={{ margin: '20px' }}>Applicant ID: {applicantId}</h1>
                     {/* Render applicant data*/}
 
                     <TableContainer component={Paper} >
@@ -109,9 +106,9 @@ export default function ApplicantPage() {
                             </TableBody>
                         </Table>
                     </TableContainer>
-
+                    <Divider />
                     <div className="info-button">
-                        <button onClick={() => navigate('/info')}>More Info</button>
+                        <button onClick={() => setShowMoreInfo(true)}> More Info </button>
                     </div>
 
                     <h2 style={{ margin: '20px' }}>Previous Payment History</h2>
