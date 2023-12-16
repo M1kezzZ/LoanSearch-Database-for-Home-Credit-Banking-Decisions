@@ -8,10 +8,12 @@
     "test": "jest --coverage"
   },
   "dependencies": {
+    "chart.js": "^4.4.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "mysql": "^2.18.1",
     "nodemon": "^2.0.20",
+    "react-chartjs-2": "^5.2.0",
     "supertest": "^6.3.3"
   },
   "devDependencies": {
