@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams} from 'react-router-dom';
 import { TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, Divider } from '@mui/material';
 
 import MoreInfo from '../components/MoreInfo';
@@ -14,6 +14,14 @@ export default function ApplicantPage() {
     const [isDataFetched, setIsDataFetched] = useState(false);
     const [showMoreInfo, setShowMoreInfo] = useState(false);
     const { applicantId } = useParams(); // Access the applicantId from the URL
+
+    const handleOpenMoreInfo = () => {
+        setShowMoreInfo(true);
+    };
+
+    const handleCloseMoreInfo = () => {
+        setShowMoreInfo(false);
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,7 +90,6 @@ export default function ApplicantPage() {
 
     return (
         <div>
-            {showMoreInfo && <MoreInfo applicantId={applicantId} handleClose={() => setShowMoreInfo(false)} />}
             {isDataFetched && (
                 <>
                     <h1 style={{ margin: '20px' }}>Applicant ID: {applicantId}</h1>
@@ -107,10 +114,12 @@ export default function ApplicantPage() {
                         </Table>
                     </TableContainer>
                     <Divider />
-                    <div className="info-button">
-                        <button onClick={() => setShowMoreInfo(true)}> More Info </button>
-                    </div>
+                    
+                    <button onClick={handleOpenMoreInfo}> More Info </button>
 
+                    {showMoreInfo && (
+                        <MoreInfo applicantId={applicantId} handleClose={handleCloseMoreInfo} />
+                    )}
                     <h2 style={{ margin: '20px' }}>Previous Payment History</h2>
                     {/* Render previous late payment data */}
                     <ul style={{ margin: '20px' }}>
@@ -121,7 +130,7 @@ export default function ApplicantPage() {
                             </li>
                         ))}
                     </ul>
-
+                    
                     <h2 style={{ margin: '20px' }}>Loyalty Assessment</h2>
                     {/* Render loyalty data */}
                     <ul style={{ margin: '20px' }}>
