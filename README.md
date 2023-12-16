@@ -84,8 +84,8 @@ SHOW INDEXES FROM installments_payments;
 SHOW INDEXES FROM previous_application;
 ```
 
-# Server
-Add all routes.\
-Add cache for route 5, it will update when logging homepage.
+### Start Program
 
-Server runs well.
+Run `mpm install` in both server and client directory.\
+Run `npm start` in server directory.\
+Run `npm start` in client directory.
