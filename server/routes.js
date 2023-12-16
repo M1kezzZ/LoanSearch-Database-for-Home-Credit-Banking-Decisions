@@ -137,7 +137,8 @@ ORDER BY Year, Month;`; // Replace with the actual SQL query
   });
 }
 
-// route 1
+// route 1: Return all information and application details of a current applicant 
+// by its application ID, including past installment performance
 const applicant = async function (req, res) {
   const query = `
       SELECT
@@ -173,7 +174,7 @@ const applicant = async function (req, res) {
   });
 };
 
-// route 2
+// route 2: Compute percentage of late payment for a particular applicant from all his/her previous applications
 const late_payment = async function (req, res) {
   const query = `
       SELECT 
@@ -197,7 +198,10 @@ const late_payment = async function (req, res) {
   });
 };
 
-// route 3
+// route 3: Return previous loans (including % of late payments and amount paid)
+// for each applicant and some key information, including status (approved, canceled, refused, etc.),
+// reason for refusal if applicable; order by the time the previous application was processed (latest first and oldest last)
+
 const previous_applications = async function (req, res) {
   const query = `
       WITH their_prev AS (
@@ -251,7 +255,11 @@ const previous_applications = async function (req, res) {
   );
 };
 
-// route 4
+// route 4: Assess how many previous loan applications a client has
+// and whether the loan terms, such as the annuity and credit amount,
+// have improved over time (current application > first application), 
+// suggesting increased loyalty to the lender.
+
 const assess_loyalty = async function (req, res) {
   const query = `
       WITH first_loan AS (
@@ -299,7 +307,8 @@ const assess_loyalty = async function (req, res) {
   );
 };
 
-// route 5
+// route 5: Display the count of different application intervals to understand
+// the frequency of applications from all existing customers
 const application_frequency = async function (req, res) {
   const currentTime = Date.now();
 
@@ -307,7 +316,7 @@ const application_frequency = async function (req, res) {
   if (
     applicationFrequencyCache.data &&
     currentTime - applicationFrequencyCache.lastUpdated <
-      applicationFrequencyCache.expiryInSeconds * 1000
+    applicationFrequencyCache.expiryInSeconds * 1000
   ) {
     // Returning cached data
     return res.json(applicationFrequencyCache.data);
@@ -329,7 +338,7 @@ const application_frequency = async function (req, res) {
   }
 };
 
-// route 6
+// route 6: Range search on current and previous application database
 const advance_search_applications = async function (req, res) {
   // Extracting query parameters with default values
   const incomeLow = req.query.AMT_INCOME_TOTAL_low ?? 0;
@@ -378,7 +387,8 @@ const advance_search_applications = async function (req, res) {
   });
 };
 
-// route 7
+// route 7: Simply return some side information about the application/client (if we have the client id).
+// This will be in a new info page if someone wants to check further infos.
 const applicant_more = async function (req, res) {
   const query = `
       SELECT
@@ -403,7 +413,12 @@ const applicant_more = async function (req, res) {
   });
 };
 
-// route 8
+// route 8: Count the number of applications received each month in the
+// last three years. It first calculates the actual dates of previous application 
+// decisions, filters these dates to include only those within the last three years, 
+// and groups these dates by year and month. For each group, it counts the total 
+// number of applications.
+
 const applications_count = async function (req, res) {
   const currentTime = Date.now();
   if (
@@ -423,7 +438,11 @@ const applications_count = async function (req, res) {
   }
 };
 
-// route 9
+// route 9: Computes the approval rate of applications per month.
+// It includes the records from the last three years, and counts the total number 
+// of applications and approved applications for each month. Then it calculates 
+// the approval rate of applications per month using the previously monthly computation.
+
 const approval_rate = async function (req, res) {
   const currentTime = Date.now();
   if (
@@ -443,7 +462,11 @@ const approval_rate = async function (req, res) {
   }
 };
 
-// route 10
+// route 10: Extracts the income and loan amount information 
+// from the current application and aligns it with the dates from the previous 
+// applications to show the trends of income and loan amount over time for each applicant.
+// It calculates the average loan amount and average income for each month.
+
 const applicant_trends = async function (req, res) {
   const query = `
       WITH Trends AS (
