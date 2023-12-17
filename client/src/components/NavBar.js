@@ -36,7 +36,7 @@ export default function NavBar() {
     <AppBar position='static' style={{ backgroundColor: '#d33f43' }}>
       <Container maxWidth='xl'>
         <Toolbar disableGutters>
-          <NavText href='/' text='HOME CREDIT' isMain />
+          <NavText href='/' text='LOAN SEARCH' isMain />
           <NavText href='/advanced_search' text='Advanced Search' />
           <NavText href='/analytics' text='Analytics' />
         </Toolbar>
