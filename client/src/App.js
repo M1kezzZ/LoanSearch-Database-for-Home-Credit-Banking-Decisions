@@ -4,9 +4,6 @@ import { indigo, amber } from '@mui/material/colors'
 import { createTheme } from "@mui/material/styles";
 import NavBar from './components/NavBar';
 import HomePage from './pages/HomePage';
-import AlbumsPage from './pages/AlbumsPage';
-import SongsPage from './pages/SongsPage';
-import AlbumInfoPage from './pages/AlbumInfoPage';
 import ApplicantInfoPage from './pages/ApplicantInfoPage';
 import AdvancedSearch from "./pages/AdvancedSearchPage";
 import Analytics from "./pages/Analytics";
@@ -32,9 +29,6 @@ export default function App() {
         <NavBar />
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/albums" element={<AlbumsPage />} />
-          <Route path="/albums/:album_id" element={<AlbumInfoPage/>} />
-          <Route path="/songs" element={<SongsPage />} />
           <Route path="/applicantpage/:applicantId" element={<ApplicantInfoPage />} />
           <Route path="/advanced_search" element={<AdvancedSearch />} />
           <Route path="/analytics" element={<Analytics />} />

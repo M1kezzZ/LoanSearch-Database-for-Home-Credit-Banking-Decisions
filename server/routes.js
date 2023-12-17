@@ -479,7 +479,7 @@ const applicant_trends = async function (req, res) {
               a.AMT_INCOME_TOTAL AS Total_Income,
               COALESCE(a.AMT_CREDIT, 0) + COALESCE(p.AMT_CREDIT, 0) AS Loan_Amount,
               COALESCE(a.AMT_ANNUITY, 0) + COALESCE(p.AMT_ANNUITY, 0) AS Total_Annuity, 
-              DATE_ADD(CURRENT_DATE, INTERVAL p.DAYS_DECISION DAY) AS Application_Date
+              DATE_ADD(CURRENT_DATE, INTERVAL -p.DAYS_DECISION DAY) AS Application_Date
           FROM applicants a
           LEFT JOIN previous_application p ON a.SK_ID_CURR = p.SK_ID_CURR
           WHERE a.SK_ID_CURR = ?
