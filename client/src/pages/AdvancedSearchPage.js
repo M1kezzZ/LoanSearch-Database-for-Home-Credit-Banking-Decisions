@@ -99,7 +99,6 @@ function SearchComponent() {
                                 {row.SK_ID_CURR}
                                 </Link>
                             </td>
-                            <td>{row.SK_ID_CURR}</td>
                             <td>{row.CODE_GENDER}</td>
                             <td>{row.AMT_INCOME_TOTAL}</td>
                             <td>{row.NAME_INCOME_TYPE}</td>
