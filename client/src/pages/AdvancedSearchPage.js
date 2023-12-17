@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box } from '@mui/material';
+import { Container } from '@mui/material';
 
 const config = require("../config.json");
 
